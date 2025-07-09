@@ -1,0 +1,216 @@
+
+<html>
+  <style>
+    html, body {
+      height: 100vh;
+      overflow: hidden;
+      margin: 0;
+    }
+    .container {
+      display: flex;
+      flex-direction: column; 
+      align-items: center;
+      height: 100%;
+      padding: 20px;
+      margin: 0;
+    }
+    fieldset {
+      width: 100%;
+      height: 240px;
+      padding: 20px 20px;
+      background-color: #ffffff;
+    }
+    .title {
+      font-size: 40px;
+    }
+    .choice-item {
+      font-size: 32px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    input[type="radio"] {
+      margin-right: 16px;
+      transform: scale(1.5);
+    }
+    label {
+      cursor: pointer;
+    }
+    .area {
+      width: 100%;
+      height: 50%;
+      overflow: auto;
+      background: linear-gradient(blue, red);
+    }
+    .sample {
+      width: 50px;
+      height: 50px;
+      background-color: yellow;
+      border-radius: 50%;
+      cursor: move;
+    }
+  </style>
+  <head>
+    <title>元素拖动</title>
+  </head>
+
+  <body>
+    <div class="container">
+      <fieldset id="operate">
+        <legend class="title">选择拖动方式：</legend>
+        <div class="choice-list">
+          <div class="choice-item">
+            <input class="radio" type="radio" id="free" name="choice" value="free" />
+            <label for="free">自由拖动</label>
+          </div>
+
+          <div class="choice-item">
+            <input class="radio" type="radio" id="onlyX" name="choice" value="onlyX" />
+            <label for="onlyX">只能X轴拖动</label>
+          </div>
+
+          <div class="choice-item">
+            <input class="radio" type="radio" id="onlyY" name="choice" value="onlyY" />
+            <label for="onlyY">只能Y轴拖动</label>
+          </div>
+
+        </div>
+      </fieldset>
+      <div class="area" id="area">
+        <div 
+          class="sample" 
+          id="sample" 
+          ontouchstart="onTouchStart(event)"
+          ontouchend="onTouchEnd(event)"
+          ontouchmove="onTouchMove(event)"
+        ></div>
+      </div>
+    </div>
+    
+    <script>
+
+      const DragType = {
+        Free: 'free',
+        OnlyX: 'onlyX',
+        OnlyY: 'onlyY'
+      }
+      let currentChoice = 'free'
+
+      // 顶部操作区
+      const operateEle = document.getElementById('operate')      
+      const operateRect = operateEle.getBoundingClientRect()
+
+      // 拖拽区域
+      const areaEle = document.getElementById('area')
+      const areaRect = areaEle.getBoundingClientRect()
+
+      // 拖拽小球
+      const sampleEle = document.getElementById('sample')
+      const sampleRect = sampleEle.getBoundingClientRect()
+
+      // 拖拽触点坐标相较于小球左上角坐标的偏移量      
+      let offsetX = 0, offsetY = 0
+
+      // 记录拖拽过程中的坐标
+      let endX, endY
+
+      window.onload = () => {
+        const currentEle = document.getElementById(currentChoice)
+        currentEle.checked = true
+
+        const radioButtons = document.querySelectorAll('input[name="choice"]')
+        radioButtons.forEach(radio => {
+          radio.addEventListener('change', onRadioChange)
+        })
+      }
+
+      function onRadioChange(e) {
+        if (e.target.value === currentChoice) {
+          return
+        }
+
+        const prevEle = document.getElementById(currentChoice)
+        prevEle.checked = false
+
+        currentChoice = e.target.value 
+        const nowEle = document.getElementById(currentChoice)
+        nowEle.checked = true
+      }
+
+      function onTouchStart(e) {
+        e.preventDefault()
+
+        const tempSampleRect = sampleEle.getBoundingClientRect()
+        const touch = e.touches[0]
+
+        offsetX = touch.clientX - tempSampleRect.left 
+        offsetY = touch.clientY - tempSampleRect.top 
+      }
+
+      function onTouchEnd(e) {}
+
+      function onTouchMove(e) {
+        e.preventDefault()
+        const touch = e.touches[0]
+
+        const realTranslateX = touch.clientX - offsetX
+        const realTranslateY = touch.clientY - offsetY
+
+        const inAreaTranslateX = getInAreaTranslateX(realTranslateX)
+        const inAreaTranslateY = getInAreaTranslateY(realTranslateY)
+
+        dragSampleInArea(inAreaTranslateX, inAreaTranslateY)
+      }
+
+      function dragSampleInArea(translateX, translateY) {
+        if (currentChoice === DragType.Free) {
+          sampleEle.style.transform = `translate(${translateX}px, ${translateY}px)`
+          endX = translateX
+          endY = translateY
+        }
+
+        if (currentChoice === DragType.OnlyX) {
+          sampleEle.style.transform = `translate(${translateX}px, ${endY}px)`
+          endX = translateX
+        }
+
+        if (currentChoice === DragType.OnlyY) {
+          sampleEle.style.transform = `translate(${endX}px, ${translateY}px)`
+          endY = translateY
+        }
+      }
+
+      function getInAreaTranslateX(translateX) {
+        // 是否越过右边界
+        if (translateX - areaRect.left + sampleRect.width > areaRect.width) 
+          return areaRect.width - sampleRect.width
+
+        let x = translateX
+        // 是否越过左边界
+        if (translateX < areaRect.left) 
+          x = areaRect.left
+
+        // 映射到拖拽区域里
+        return x - areaRect.left
+      }
+
+      function getInAreaTranslateY(translateY) {
+        // 是否越过底边界
+        if (translateY - areaRect.top + sampleRect.height > areaRect.height) 
+          return areaRect.height - sampleRect.height
+
+        let y = translateY
+        // 是否越过上边界
+        if (translateY < areaRect.top)
+          y = areaRect.top
+
+        // 映射到拖拽区域里
+        return y - areaRect.top
+      }
+
+    </script>
+
+  </body>
+
+</html>
