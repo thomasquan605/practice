@@ -127,8 +127,16 @@ class DragBall {
     console.log(`dy: ${dy}`)
 
     this.state.lastY = touch.clientY
-    this.state.rate = this.getRate(dy, this.state.y, this.state.rate)
+    this.state.rate = this.getRate(dy, this.state.rate)
     this.state.y += dy * this.state.rate
+
+    if (this.state.y >= 600) {
+      this.state.y = 600
+    }
+
+    if (this.state.y < 0) {
+      this.state.y = 0
+    }
 
     this.drayMove(this.state.y)
 
@@ -136,21 +144,20 @@ class DragBall {
   }
 
   // 手势
-  getRate(distance, y, rate) {
+  getRate(distance, rate) {
     this.state.ladderDistance += distance
 
-    if (y >= 600) {
-      return 0
-    }
+    if (distance > 0) {
+      if (this.state.ladderDistance >= 100) {
+        rate = Math.max(0, rate - 0.08)
+        this.state.ladderDistance = 0
+      }
 
-    if (this.state.ladderDistance >= 100) {
-      rate = Math.max(0, rate - 0.08)
-
-      // if (rate <= 0.1 && rate > 0) {
-      //   rate = 0
-      // }
-
-      this.state.ladderDistance = 0
+    } else {
+      if (this.state.ladderDistance < -100) {
+        rate = Math.min(1, rate + 0.08)
+        this.state.ladderDistance = 0
+      }
     }
 
     return rate
