@@ -9,7 +9,6 @@ const nextFrame = window.requestAnimationFrame ||
                     return setTimeout(callback, delay)
                   }
 
-// 偷个懒                  
 const cancelFrame = window.cancelAnimationFrame ||
                     window.webkitCancelAnimationFrame ||
                     clearTimeout;
@@ -45,7 +44,7 @@ function slideTo(el, target) {
 
 const masDragDistance = 300 // 最大拖动距离
 
-export default class DragBall {
+export default class TQPullDownRefresh {
 
   state = {
     x: 0,
@@ -58,6 +57,7 @@ export default class DragBall {
     rate: 1,
     isRunning: false
   }
+  containerRef = null
   areaRect = null
   draggerEle = null
   draggerRect = null
@@ -73,11 +73,11 @@ export default class DragBall {
     this.onDragMove = onDragMove
 
     // 拖拽区域
-    const containerEle = document.getElementById(this.options.containerId)
-    this.areaRect = containerEle.getBoundingClientRect()
+    this.containerRef = options.containerRef || document.getElementById(options.containerId)
+    this.areaRect = this.containerRef.getBoundingClientRect()
 
     // 拖拽小球
-    this.draggerEle = document.getElementById(this.options.draggerId)
+    this.draggerEle = options.refresherRef || document.getElementById(this.options.refresherId)
     this.draggerRect = this.draggerEle.getBoundingClientRect()
 
     this.draggerEle.addEventListener('touchstart', this.touchStart.bind(this))
@@ -113,8 +113,11 @@ export default class DragBall {
       angle = 0
     }
 
+    let timer = null
+    cancelFrame(timer)
+
     if (this.state.isRunning) {
-      requestAnimationFrame(() => {
+      timer = nextFrame(() => {
         this.rotate(angle - 5)
       })
     }
@@ -134,8 +137,6 @@ export default class DragBall {
     if (this.state.y < 0) {
       this.state.y = 0
     }
-
-    console.log(`dy: ${dy}, rate: ${this.state.rate}, y: ${this.state.y}`)
 
     this.drayMove(this.state.y)
 

@@ -7,7 +7,13 @@ function App() {
 
   return (
     <div>
-      <Drag />
+      <Drag 
+        onStartRequest={(event) => {
+          setTimeout(() => {
+            event.target.springBack()
+          }, 5000);
+        }} 
+      />
     </div>
   )
 }
