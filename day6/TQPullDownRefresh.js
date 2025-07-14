@@ -44,52 +44,70 @@ function slideTo(el, target) {
 
 const masDragDistance = 300 // 最大拖动距离
 
-export default class TQPullDownRefresh {
+class TQPullDownRefresh {
 
   state = {
     x: 0,
     y: 0,
-    endX: 0,  
     endY: 0,
     ladderDistance: 0, // 阶梯下降时阶梯的数值
-    lastX: 0,
     lastY: 0,
     rate: 1,
     isRunning: false
   }
+
   containerRef = null
   areaRect = null
-  draggerEle = null
-  draggerRect = null
+  refresherRef = null
+  refresherRect = null
 
   onDragStart = null
   onDragEnd = null
   onDragMove = null
 
-  constructor(options = {}, onDragStart, onDragEnd, onDragMove) {
-    this.options = options
+  constructor(onDragStart, onDragEnd, onDragMove) {
     this.onDragStart = onDragStart
     this.onDragEnd = onDragEnd
     this.onDragMove = onDragMove
 
-    // 拖拽区域
-    this.containerRef = options.containerRef || document.getElementById(options.containerId)
-    this.areaRect = this.containerRef.getBoundingClientRect()
+    // 手动创建 dom
+    const link = document.createElement('link')
+    link.rel = 'stylesheet'
+    link.href = './refresh.css'
+    document.head.appendChild(link)
 
-    // 拖拽小球
-    this.draggerEle = options.refresherRef || document.getElementById(this.options.refresherId)
-    this.draggerRect = this.draggerEle.getBoundingClientRect()
+    this.containerRef = document.createElement('div')
+    this.containerRef.className = 'container'
+    document.body.appendChild(this.containerRef)
 
-    this.draggerEle.addEventListener('touchstart', this.touchStart.bind(this))
-    this.draggerEle.addEventListener('touchmove', this.touchMove.bind(this))
-    this.draggerEle.addEventListener('touchend', this.touchEnd.bind(this))
+    this.refresherRef = document.createElement('div')
+    this.refresherRef.className = 'refresher'
+    this.containerRef.appendChild(this.refresherRef)
+
+    const img = document.createElement('img')
+    img.src = './refresh.png'
+    img.style.width = '100%'
+    img.style.height = '100%'
+    this.refresherRef.appendChild(img)
+
+    // this.containerRef = options.containerRef || document.getElementById(options.containerId)
+    // this.areaRect = this.containerRef.getBoundingClientRect()
+
+    // this.refresherRef = options.refresherRef || document.getElementById(this.options.refresherId)
+    // this.refresherRect = this.refresherRef.getBoundingClientRect()
+
+    this.containerRef.addEventListener('touchstart', this.touchStart.bind(this))
+    this.containerRef.addEventListener('touchmove', this.touchMove.bind(this))
+    this.containerRef.addEventListener('touchend', this.touchEnd.bind(this))
   }
 
   prepare(touch) {
-    this.draggerRect = this.draggerEle.getBoundingClientRect()
+    this.refresherRect = this.refresherRef.getBoundingClientRect()
 
-    this.state.x = this.draggerRect.left
-    this.state.y = this.draggerRect.top
+    this.state.x = this.refresherRect.left
+    this.state.y = this.refresherRect.top
+
+    this.state.lastY = touch.clientY
   }
 
   deinit() {
@@ -99,13 +117,13 @@ export default class TQPullDownRefresh {
       this.springBack()
     }
 
-    this.draggerEle.removeEventListener('touchstart', this.touchStart)
-    this.draggerEle.removeEventListener('touchmove', this.touchMove)
-    this.draggerEle.removeEventListener('touchend', this.touchEnd)
+    this.containerRef.removeEventListener('touchstart', this.touchStart)
+    this.containerRef.removeEventListener('touchmove', this.touchMove)
+    this.containerRef.removeEventListener('touchend', this.touchEnd)
   }
 
   rotate(angle) {
-    this.draggerEle.style.transform = `translate(0px, ${this.state.y}px)  rotate(${angle}deg)`
+    this.refresherRef.style.transform = `translate(0px, ${this.state.y}px)  rotate(${angle}deg)`
 
     if (angle === -360) {
       angle = 0
@@ -136,9 +154,7 @@ export default class TQPullDownRefresh {
       this.state.y = 0
     }
 
-    this.drayMove(this.state.y)
-
-    return this.state.y
+    this.dragMove(this.state.y)
   }
 
   // 手势
@@ -162,13 +178,14 @@ export default class TQPullDownRefresh {
     return rate
   }
 
-  drayMove(translateY) {
-    if (!this.draggerEle) 
+  dragMove(translateY) {
+    if (!this.refresherRef) 
       return
 
     const angle = ~~(translateY / masDragDistance * 360) * -1
-    console.log(`translateY: ${translateY}, angle: ${angle}`)
-    this.draggerEle.style.transform = `translate(0px, ${translateY}px) rotate(${angle}deg)`
+    this.refresherRef.style.transform = `translate(0px, ${translateY}px) rotate(${angle}deg)`
+
+    this.onDragMove && this.onDragMove(translateY)
   }
 
   touchStart(e) {
@@ -186,8 +203,8 @@ export default class TQPullDownRefresh {
   // 回弹
   springBack() {
     this.state.isRunning = false
-    const rect = this.draggerEle.getBoundingClientRect()
-    slideTo(this.draggerEle, rect.top)
+    const rect = this.refresherRef.getBoundingClientRect()
+    slideTo(this.refresherRef, rect.top)
 
     this.state.rate = 1
     this.state.lastY = 0
@@ -195,7 +212,6 @@ export default class TQPullDownRefresh {
 
   touchMove(e) {
     const touch = e.touches[0]
-    const y = this.move(touch)
-    this.onDragMove && this.onDragMove(y)
+    this.move(touch)
   }
 }

@@ -1,0 +1,40 @@
+
+<html>
+  <head>
+    <title>模拟下拉刷新</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+
+  <body>
+    <div class="container">   
+    </div>
+    
+    <script type="text/javascript" src="TQPullDownRefresh.js"></script>
+    <script>
+
+      function init() {
+        let pullDownRefresh = new TQPullDownRefresh(
+          () => {
+            console.log('开始拖动')
+          },
+          () => {
+            console.log('结束拖动')
+            setTimeout(() => {
+              pullDownRefresh.springBack()
+            }, 5000)
+          },
+          (y) => {
+            console.log(`拖动中，位置：(${y})`)
+          }
+        )
+      }
+
+      window.onload = () => {
+        init()
+      }
+
+    </script>
+
+  </body>
+
+</html>
